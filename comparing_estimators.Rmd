@@ -242,3 +242,52 @@ theta_hat %>%
 	group_by(name) %>% 
 	summarize(mean=mean(value), bias = mean(value-theta), var = var(value), mse=mean((value-theta)^2))
 ```
+
+
+
+### Aside: distribution of minimum and maximum 
+There was a question in class about the distribution of the minimum and maximum of the uniform random variable. 
+
+We found that 
+$$f_{Y_{(1)}}(y) = \frac{n}{\theta} (1-y/\theta)^{n-1}$$
+and that 
+$$f_{Y_{(n)}}(y) = \frac{n}{\theta} (y/\theta)^{n-1}.$$
+
+These are (scaled) examples of the beta distribution:
+$$f(y) = \frac{y^{\alpha-1}(1-y)^{\beta-1}}{B(\alpha, \beta)}.$$
+
+In other words, the distribution of the minimum of $n$ $unif(0,1)$ random variable is $Beta(1, n)$ and the distribution of the maximum is $Beta(n,1)$. (_note: this is something that you would have proven in STAT 2910 and an argument that you should understand in STAT 3910_)
+
+Let's see how this works in this setting.
+
+First, recover the minimum values from the estimates:
+```{r}
+theta_min = theta_hat %>% filter(name=="estimate1") %>% mutate(value=value/(n+1))
+```
+
+Now, plot these minimum values and overlay with a $Beta(1, n)$ density curve:
+```{r}
+ggplot(theta_min, aes(value)) +
+    geom_histogram(alpha=.5, binwidth=1, boundary=1) + 
+    stat_function(fun = function(x){dbeta(x/theta, shape1=1, shape2=n)})
+```
+
+
+This time, try it with the maximums:
+```{r}
+theta_max = theta_hat %>% filter(name=="estimate3") %>% mutate(value=value*n/(n+1))
+
+ggplot(theta_max, aes(value)) +
+    geom_histogram(alpha=.5, binwidth=1, boundary=1) + 
+    stat_function(fun = function(x){dbeta(x/theta, shape1=n, shape2=1)})
+```
+
+
+We know that the means are approximately normally distributed: 
+```{r}
+theta_mean = theta_hat %>% filter(name=="estimate2") %>% mutate(value=value/2)
+
+ggplot(theta_mean, aes(value)) +
+    geom_histogram(aes(y=..density..), alpha=.5, binwidth=1, boundary=1) + 
+    stat_function(fun = dnorm, args=list(mean=mean(theta_mean$value), sd=sd(theta_mean$value)))
+```
